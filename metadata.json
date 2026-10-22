@@ -1,0 +1,6 @@
+{
+  "name": "PRANTEJ CloudStock",
+  "description": "Professional Store & Inventory Management System with POS, stock movement audit trail, role-based authorization, and real-time dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
