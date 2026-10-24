@@ -77,42 +77,61 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.R
 import com.example.data.model.Product
+import com.example.ui.theme.MonerRuby
+import com.example.ui.theme.MonerGold
+import com.example.ui.theme.MonerGoldLight
 import com.example.ui.theme.BanglalinkOrange
 import com.example.ui.theme.BanglalinkOrangeDark
 import com.example.ui.theme.BanglalinkOrangeLight
 import com.example.ui.theme.EmeraldDark
 import com.example.ui.theme.EmeraldLight
 import com.example.ui.theme.EmeraldSecondary
-import com.example.ui.theme.PrantejDeepEmerald
-import com.example.ui.theme.PrantejEmeraldBright
-import com.example.ui.theme.PrantejGold
 import com.example.ui.theme.RoseDanger
 import com.example.ui.theme.Slate200
 import com.example.ui.theme.Slate400
 import com.example.ui.theme.Slate700
 import com.example.ui.theme.Slate800
+import com.example.ui.theme.Slate950
 import com.example.ui.theme.Slate900
+
+import androidx.compose.ui.composed
 
 /**
  * Gen-Z Spring Press Effect Modifier
  * Gives a tactile bouncy feel when tapping cards and buttons.
  */
 fun Modifier.bounceClick(
-    scaleDown: Float = 0.94f,
-    onClick: () -> Unit
-): Modifier = this.pointerInput(Unit) {
-    var isPressed by mutableStateOf(false)
-    while (true) {
-        awaitPointerEventScope {
-            awaitFirstDown(requireUnconsumed = false)
-            isPressed = true
-            val upOrCancel = waitForUpOrCancellation()
-            isPressed = false
-            if (upOrCancel != null) {
-                onClick()
+    scaleDown: Float = 0.95f,
+    onClick: (() -> Unit)? = null
+): Modifier = this.composed {
+    var isPressed by remember { mutableStateOf(false) }
+    val animatedScale by animateFloatAsState(
+        targetValue = if (isPressed) scaleDown else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "BounceScale"
+    )
+
+    this
+        .graphicsLayer {
+            scaleX = animatedScale
+            scaleY = animatedScale
+        }
+        .pointerInput(Unit) {
+            awaitPointerEventScope {
+                while (true) {
+                    awaitFirstDown(requireUnconsumed = false)
+                    isPressed = true
+                    val upOrCancel = waitForUpOrCancellation()
+                    isPressed = false
+                    if (upOrCancel != null) {
+                        onClick?.invoke()
+                    }
+                }
             }
         }
-    }
 }
 
 /**
@@ -166,7 +185,7 @@ fun BouncyCard(
 @Composable
 fun PulsingStatusDot(
     modifier: Modifier = Modifier,
-    color: Color = PrantejEmeraldBright
+    color: Color = EmeraldSecondary
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulseTransition")
     val scale by infiniteTransition.animateFloat(
@@ -209,38 +228,60 @@ fun PulsingStatusDot(
 }
 
 /**
- * Helper to map product types/names to realistic generated visual assets
+ * Helper to map product types/names and jewelry categories for Moner Upohar
  */
 object ProductAssetResolver {
+    val JEWELRY_CATEGORIES = listOf(
+        "Necklace",
+        "Bracelet",
+        "Kashmiri Churi",
+        "Finger Ring",
+        "Earring",
+        "Payel"
+    )
+
+    fun getCategoryBanglaName(category: String): String {
+        return when (category.trim().lowercase()) {
+            "necklace" -> "নেকলেস / গলার হার"
+            "bracelet" -> "ব্রেসলেট"
+            "kashmiri churi", "churi" -> "কাশ্মীরি চুড়ি"
+            "finger ring", "ring" -> "আংটি"
+            "earring", "earrings" -> "কানের দুল"
+            "payel", "anklet" -> "পায়েল"
+            else -> category
+        }
+    }
+
+    fun getDrawableForCategory(category: String): Int {
+        val cat = category.trim().lowercase()
+        return when {
+            cat.contains("necklace") || cat.contains("নেকলেস") || cat.contains("হার") -> R.drawable.cat_necklace
+            cat.contains("bracelet") || cat.contains("ব্রেসলেট") -> R.drawable.cat_bracelet
+            cat.contains("kashmiri") || cat.contains("churi") || cat.contains("চুড়ি") || cat.contains("চুড়ি") -> R.drawable.cat_kashmiri_churi
+            cat.contains("ring") || cat.contains("আংটি") -> R.drawable.cat_finger_ring
+            cat.contains("earring") || cat.contains("দুল") || cat.contains("ঝুমকা") || cat.contains("সুই") -> R.drawable.cat_earring
+            cat.contains("payel") || cat.contains("পায়েল") || cat.contains("নূপুর") || cat.contains("anklet") -> R.drawable.cat_payel
+            else -> R.drawable.moner_upohar_logo
+        }
+    }
+
     fun getDrawableForProduct(product: Product): Int {
         val nameLower = product.name.lowercase()
         val catLower = product.category.lowercase()
-
         return when {
-            nameLower.contains("phone") || catLower.contains("phone") || nameLower.contains("smartphone") || nameLower.contains("mobile") ->
-                R.drawable.prod_flagship_phone_1792690428158
-            nameLower.contains("watch") || catLower.contains("watch") || nameLower.contains("smartwatch") ->
-                R.drawable.prod_smart_watch_1792690441179
-            nameLower.contains("earbud") || nameLower.contains("audio") || nameLower.contains("headphone") || catLower.contains("audio") ->
-                R.drawable.prod_earbuds_case_1792690455207
-            nameLower.contains("charger") || nameLower.contains("cable") || nameLower.contains("gan") || catLower.contains("power") || catLower.contains("accessories") ->
-                R.drawable.prod_fast_charger_1792690476604
-            else -> {
-                // Modulo based on SKU hash to distribute visually
-                val hash = kotlin.math.abs(product.sku.hashCode()) % 4
-                when (hash) {
-                    0 -> R.drawable.prod_flagship_phone_1792690428158
-                    1 -> R.drawable.prod_smart_watch_1792690441179
-                    2 -> R.drawable.prod_earbuds_case_1792690455207
-                    else -> R.drawable.prod_fast_charger_1792690476604
-                }
-            }
+            nameLower.contains("necklace") || nameLower.contains("clover") || nameLower.contains("নেকলেস") || nameLower.contains("হার") || catLower.contains("necklace") -> R.drawable.cat_necklace
+            nameLower.contains("bracelet") || nameLower.contains("ব্রেসলেট") || nameLower.contains("bangle") || catLower.contains("bracelet") -> R.drawable.cat_bracelet
+            nameLower.contains("kashmiri") || nameLower.contains("churi") || nameLower.contains("চুড়ি") || nameLower.contains("চুড়ি") || catLower.contains("churi") -> R.drawable.cat_kashmiri_churi
+            nameLower.contains("ring") || nameLower.contains("আংটি") || catLower.contains("ring") -> R.drawable.cat_finger_ring
+            nameLower.contains("earring") || nameLower.contains("দুল") || nameLower.contains("ঝুমকা") || nameLower.contains("সুই") || catLower.contains("earring") -> R.drawable.cat_earring
+            nameLower.contains("payel") || nameLower.contains("পায়েল") || nameLower.contains("নূপুর") || nameLower.contains("anklet") || catLower.contains("payel") -> R.drawable.cat_payel
+            else -> getDrawableForCategory(product.category)
         }
     }
 }
 
 /**
- * Modern Exit Confirmation Dialog (Requirement 1)
+ * Modern Exit Confirmation Dialog
  * Pops up when the user attempts to exit the application.
  * Offers "Exit" and "Cancel" (which closes the dialog leaving current state intact).
  */
@@ -272,22 +313,22 @@ fun ExitConfirmationDialog(
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape)
-                        .background(
-                            Brush.linearGradient(
-                                listOf(BanglalinkOrange.copy(alpha = 0.2f), RoseDanger.copy(alpha = 0.15f))
-                            )
+                    .background(
+                        Brush.linearGradient(
+                            listOf(MonerRuby.copy(alpha = 0.2f), RoseDanger.copy(alpha = 0.15f))
                         )
-                        .border(
-                            2.dp,
-                            Brush.linearGradient(listOf(BanglalinkOrange, RoseDanger)),
-                            CircleShape
-                        ),
+                    )
+                    .border(
+                        2.dp,
+                        Brush.linearGradient(listOf(MonerRuby, MonerGold)),
+                        CircleShape
+                    ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.PowerSettingsNew,
                         contentDescription = "Exit App Icon",
-                        tint = BanglalinkOrange,
+                        tint = MonerRuby,
                         modifier = Modifier.size(32.dp)
                     )
                 }
@@ -295,7 +336,7 @@ fun ExitConfirmationDialog(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 Text(
-                    text = "Exit PRANTEJ CloudStock?",
+                    text = "Exit মনের উপহার?",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -305,7 +346,7 @@ fun ExitConfirmationDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Are you sure you want to exit the application? Your store inventory and active cashier session will remain completely safe.",
+                    text = "Are you sure you want to exit the application? Your boutique store inventory and active cashier session will remain completely safe.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -343,7 +384,7 @@ fun ExitConfirmationDialog(
                             .height(48.dp),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = BanglalinkOrange
+                            containerColor = MonerRuby
                         )
                     ) {
                         Icon(
@@ -366,7 +407,7 @@ fun ExitConfirmationDialog(
 }
 
 /**
- * Banglalink-style Modern Promo Banner Card
+ * Moner Upohar Boutique Promotional Hero Banner Card
  */
 @Composable
 fun BanglalinkPromoHeroBanner(
@@ -376,61 +417,61 @@ fun BanglalinkPromoHeroBanner(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(170.dp),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .height(190.dp),
+        shape = RoundedCornerShape(22.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Image(
-                painter = painterResource(id = R.drawable.promo_banner_smart_pos_1792690407728),
-                contentDescription = "Smart Retail Promo Banner",
+                painter = painterResource(id = R.drawable.moner_upohar_logo),
+                contentDescription = "মনের উপহার Official Logo Banner",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Dynamic scrim gradient overlay
+            // Scrim gradient overlay for crisp readability
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.horizontalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.82f),
-                                Color.Black.copy(alpha = 0.35f),
-                                Color.Transparent
+                                Color.Black.copy(alpha = 0.92f),
+                                Color.Black.copy(alpha = 0.72f),
+                                Color.Black.copy(alpha = 0.40f)
                             )
                         )
                     )
             )
 
-            // Content text & CTA badge
+            // Content text & boutique tags
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(18.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Top Tag
+                // Top Badges
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(BanglalinkOrange)
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                            .background(MonerRuby)
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = Icons.Default.FlashOn,
+                                imageVector = Icons.Default.Star,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = MonerGoldLight,
                                 modifier = Modifier.size(12.dp)
                             )
-                            Spacer(modifier = Modifier.width(3.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "CLOUD SPEED POS",
+                                text = "EXCLUSIVE JEWELRY & GIFTS",
                                 color = Color.White,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.ExtraBold
@@ -441,31 +482,41 @@ fun BanglalinkPromoHeroBanner(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(PrantejDeepEmerald)
-                            .border(1.dp, PrantejGold, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                            .background(Color.Black.copy(alpha = 0.6f))
+                            .border(1.dp, MonerGold, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "PRANTEJ OFFICIAL",
-                            color = PrantejGold,
-                            fontSize = 10.sp,
+                            text = "মনের উপহার",
+                            color = MonerGoldLight,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
 
-                // Title and Subtitle
+                // Title and Subtitle with the authentic Bangla product description
                 Column {
                     Text(
-                        text = "Instant 1-Tap POS Checkout",
+                        text = "মনের উপহার (Moner Upohar)",
                         color = Color.White,
                         style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "— প্রিয়জনের জন্য, হৃদয়ের উপহার —",
+                        color = MonerGoldLight,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Real-time stock ledger, thermal bills & cloud audit sync",
+                        text = "Necklace • Bracelet • Finger Ring • Kashmiri Churi • Earring • Payel",
                         color = Slate200,
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

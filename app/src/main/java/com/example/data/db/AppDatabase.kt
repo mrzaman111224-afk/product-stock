@@ -81,7 +81,7 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "prantej_cloudstock.db"
+                    "moner_upohar_boutique.db"
                 )
                     .fallbackToDestructiveMigration()
                     .addCallback(DatabaseCallback())
@@ -115,11 +115,11 @@ abstract class AppDatabase : RoomDatabase() {
             val userDao = database.userDao()
             val settingDao = database.storeSettingDao()
 
-            // Master Owner Account for PRANTEJ
+            // Master Owner Account for Moner Upohar
             val adminUser = UserAccount(
                 id = "admin-primary-001",
-                email = "admin@prantej.com",
-                displayName = "PRANTEJ Admin",
+                email = "admin@monerupohar.com",
+                displayName = "মনের উপহার Admin",
                 role = UserRole.ADMIN,
                 status = UserStatus.APPROVED,
                 passwordHash = "admin123"
@@ -127,11 +127,11 @@ abstract class AppDatabase : RoomDatabase() {
             userDao.insertUser(adminUser)
 
             // Clean Store Settings
-            settingDao.setSetting(StoreSetting("store_name", "PRANTEJ Store"))
+            settingDao.setSetting(StoreSetting("store_name", "মনের উপহার (Moner Upohar)"))
             settingDao.setSetting(StoreSetting("store_currency", "BDT (৳)"))
             settingDao.setSetting(StoreSetting("currency_symbol", "৳"))
             settingDao.setSetting(StoreSetting("store_phone", "+880 1700-000000"))
-            settingDao.setSetting(StoreSetting("store_address", "PRANTEJ, Bangladesh"))
+            settingDao.setSetting(StoreSetting("store_address", "মনের উপহার জুয়েলারি ও গিফট শপ, বাংলাদেশ"))
             settingDao.setSetting(StoreSetting("quick_admin_login_enabled", "false"))
             settingDao.setSetting(StoreSetting("allow_staff_requests", "true"))
             settingDao.setSetting(StoreSetting("enforce_single_admin", "true"))
@@ -147,8 +147,8 @@ abstract class AppDatabase : RoomDatabase() {
             if (userDao.getUserCount() == 0) {
                 val adminUser = UserAccount(
                     id = "admin-primary-001",
-                    email = "admin@prantej.com",
-                    displayName = "PRANTEJ Admin",
+                    email = "admin@monerupohar.com",
+                    displayName = "মনের উপহার Admin",
                     role = UserRole.ADMIN,
                     status = UserStatus.APPROVED,
                     passwordHash = "admin123"

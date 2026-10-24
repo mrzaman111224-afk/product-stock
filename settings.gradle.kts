@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "PRANTEJ CloudStock"
+rootProject.name = "Moner Upohar"
 
 include(":app")

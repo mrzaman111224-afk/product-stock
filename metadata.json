@@ -1,6 +1,6 @@
 {
-  "name": "PRANTEJ CloudStock",
-  "description": "Professional Store & Inventory Management System with POS, stock movement audit trail, role-based authorization, and real-time dashboard.",
+  "name": "মনের উপহার (Moner Upohar)",
+  "description": "মনের উপহার (Moner Upohar) — প্রিয়জনের জন্য, হৃদয়ের উপহার। প্রিমিয়াম জুয়েলারি ও গিফট বুটিকের আধুনিক POS, ইনভেন্টরি ও স্টাফ ম্যানেজমেন্ট সিস্টেম।",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

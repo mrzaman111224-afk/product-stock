@@ -33,10 +33,13 @@ import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import com.example.data.model.UserStatus
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -82,11 +85,11 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.tween
 import com.example.ui.components.PulsingStatusDot
+import com.example.ui.theme.MonerRuby
+import com.example.ui.theme.MonerGold
+import com.example.ui.theme.MonerGoldLight
 import com.example.ui.theme.BanglalinkOrange
 import com.example.ui.theme.BanglalinkOrangeLight
-import com.example.ui.theme.PrantejDeepEmerald
-import com.example.ui.theme.PrantejEmeraldBright
-import com.example.ui.theme.PrantejGold
 
 data class NavItem(
     val destination: NavigationDestination,
@@ -117,16 +120,26 @@ fun MainScreen(viewModel: MainViewModel) {
     }
 
     val isAdmin = currentUser?.role == UserRole.ADMIN
+    val allUsers by viewModel.allUsers.collectAsState()
+    val pendingStaffCount = remember(allUsers) { allUsers.count { it.status == UserStatus.PENDING } }
 
-    val navItems = listOf(
-        NavItem(NavigationDestination.Dashboard, "Dashboard", Icons.Default.Dashboard),
-        NavItem(NavigationDestination.POS, "POS", Icons.Default.PointOfSale),
-        NavItem(NavigationDestination.Products, "Products", Icons.Default.Inventory),
-        NavItem(NavigationDestination.Transactions, "Sales", Icons.Default.Receipt),
-        NavItem(NavigationDestination.Logs, "Audit", Icons.Default.History),
-        NavItem(NavigationDestination.Staff, "Staff", Icons.Default.People),
-        NavItem(NavigationDestination.Settings, "Settings", Icons.Default.Settings)
-    )
+    val navItems = if (isAdmin) {
+        listOf(
+            NavItem(NavigationDestination.Dashboard, "Dashboard", Icons.Default.Dashboard),
+            NavItem(NavigationDestination.POS, "POS", Icons.Default.PointOfSale),
+            NavItem(NavigationDestination.Products, "Products", Icons.Default.Inventory),
+            NavItem(NavigationDestination.Transactions, "Sales", Icons.Default.Receipt),
+            NavItem(NavigationDestination.Logs, "Audit", Icons.Default.History),
+            NavItem(NavigationDestination.Staff, "Staff", Icons.Default.People),
+            NavItem(NavigationDestination.Settings, "Settings", Icons.Default.Settings)
+        )
+    } else {
+        listOf(
+            NavItem(NavigationDestination.Dashboard, "Dashboard", Icons.Default.Dashboard),
+            NavItem(NavigationDestination.POS, "POS", Icons.Default.PointOfSale),
+            NavItem(NavigationDestination.Products, "Stock", Icons.Default.Inventory)
+        )
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -135,36 +148,29 @@ fun MainScreen(viewModel: MainViewModel) {
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
-                            painter = painterResource(id = R.drawable.prantej_brand_symbol),
-                            contentDescription = "PRANTEJ Official Logo",
+                            painter = painterResource(id = R.drawable.moner_upohar_logo),
+                            contentDescription = "মনের উপহার Official Logo",
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(38.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .border(1.dp, PrantejGold.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                                .border(1.dp, MonerGold.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "PRANTEJ",
+                                    text = "মনের উপহার",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Black,
                                     color = MaterialTheme.colorScheme.onBackground
-                                )
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    text = "CloudStock",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = BanglalinkOrange
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 PulsingStatusDot()
                             }
                             Text(
-                                text = if (isAdmin) "Super Admin Terminal" else "Store Cashier Active",
+                                text = if (isAdmin) "Boutique Admin Terminal" else "Store Cashier Active",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (isAdmin) BanglalinkOrange else PrantejEmeraldBright,
+                                color = if (isAdmin) MonerRuby else MonerGold,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -177,19 +183,19 @@ fun MainScreen(viewModel: MainViewModel) {
                             .clip(RoundedCornerShape(10.dp))
                             .background(
                                 if (isAdmin) BanglalinkOrange.copy(alpha = 0.15f)
-                                else PrantejEmeraldBright.copy(alpha = 0.15f)
+                                else MonerGold.copy(alpha = 0.15f)
                             )
                             .border(
                                 1.dp,
                                 if (isAdmin) BanglalinkOrange.copy(alpha = 0.35f)
-                                else PrantejEmeraldBright.copy(alpha = 0.35f),
+                                else MonerGold.copy(alpha = 0.35f),
                                 RoundedCornerShape(10.dp)
                             )
                             .padding(horizontal = 9.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = currentUser?.role?.name ?: "USER",
-                            color = if (isAdmin) BanglalinkOrange else PrantejEmeraldBright,
+                            color = if (isAdmin) BanglalinkOrange else MonerGold,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
@@ -241,10 +247,25 @@ fun MainScreen(viewModel: MainViewModel) {
                         selected = isSelected,
                         onClick = { viewModel.navigateTo(item.destination) },
                         icon = {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.title
-                            )
+                            if (item.destination == NavigationDestination.Staff && pendingStaffCount > 0) {
+                                BadgedBox(
+                                    badge = {
+                                        Badge(containerColor = BanglalinkOrange) {
+                                            Text("$pendingStaffCount", color = Color.White)
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = item.icon,
+                                        contentDescription = item.title
+                                    )
+                                }
+                            } else {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.title
+                                )
+                            }
                         },
                         label = {
                             Text(

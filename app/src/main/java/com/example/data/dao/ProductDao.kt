@@ -26,6 +26,9 @@ interface ProductDao {
     @Query("SELECT COUNT(*) FROM products WHERE status != 'ARCHIVED'")
     suspend fun getActiveProductCount(): Int
 
+    @Query("SELECT * FROM products WHERE status != 'ARCHIVED'")
+    suspend fun getAllActiveProductsList(): List<Product>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProduct(product: Product)
 

@@ -2,49 +2,69 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Brand Primary Colors (Indigo SaaS palette)
-val IndigoPrimary = Color(0xFF4F46E5)
-val IndigoDark = Color(0xFF3730A3)
-val IndigoLight = Color(0xFF818CF8)
-val IndigoContainerLight = Color(0xFFEEF2FF)
-val IndigoContainerDark = Color(0xFF1E1B4B)
+// Moner Upohar Pro Luxury Boutique Palette
+// Royal Crimson Wine / Burgundy
+val MonerRuby = Color(0xFF991B1B)
+val MonerRubyDark = Color(0xFF7F1D1D)
+val MonerRubyDeep = Color(0xFF450A0A)
+val MonerRubyLight = Color(0xFFE11D48)
+val MonerRubyContainerLight = Color(0xFFFFF1F2)
+val MonerRubyContainerDark = Color(0xFF2E0909)
 
-// Secondary Colors (Emerald Green accents)
-val EmeraldSecondary = Color(0xFF10B981)
-val EmeraldDark = Color(0xFF047857)
-val EmeraldLight = Color(0xFF34D399)
-val EmeraldContainerLight = Color(0xFFECFDF5)
-val EmeraldContainerDark = Color(0xFF064E3B)
+// Imperial & Champagne Gold
+val MonerGold = Color(0xFFD97706)
+val MonerGoldDark = Color(0xFFB45309)
+val MonerGoldLight = Color(0xFFFBBF24)
+val MonerGoldShimmer = Color(0xFFFDE68A)
+val MonerGoldContainerLight = Color(0xFFFFFBEB)
+val MonerGoldContainerDark = Color(0xFF3B1D06)
 
-// Neutral & Slate Surface Colors
-val Slate950 = Color(0xFF020617)
-val Slate900 = Color(0xFF0F172A)
-val Slate800 = Color(0xFF1E293B)
-val Slate700 = Color(0xFF334155)
-val Slate600 = Color(0xFF475569)
-val Slate500 = Color(0xFF64748B)
-val Slate400 = Color(0xFF94A3B8)
-val Slate300 = Color(0xFFCBD5E1)
-val Slate200 = Color(0xFFE2E8F0)
-val Slate100 = Color(0xFFF1F5F9)
-val Slate50 = Color(0xFFF8FAFC)
+// Rose Gold Accents
+val MonerRoseGold = Color(0xFFFB7185)
+val MonerRoseGoldLight = Color(0xFFFDA4AF)
+
+// Luxe Ivory & Pearl Surfaces
+val MonerIvory = Color(0xFFFAF7F2)
+val MonerIvoryPure = Color(0xFFFDFBF7)
+
+// Compatibility aliases for existing references
+val IndigoPrimary = MonerRuby
+val IndigoDark = MonerRubyDark
+val IndigoLight = MonerRubyLight
+val IndigoContainerLight = MonerRubyContainerLight
+val IndigoContainerDark = MonerRubyContainerDark
+
+val EmeraldSecondary = MonerGold
+val EmeraldDark = MonerGoldDark
+val EmeraldLight = MonerGoldLight
+val EmeraldContainerLight = MonerGoldContainerLight
+val EmeraldContainerDark = MonerGoldContainerDark
+
+// Pro Velvet Obsidian & Slate Surface Colors
+val Slate950 = Color(0xFF09090B)
+val Slate900 = Color(0xFF111115)
+val Slate850 = Color(0xFF18181E)
+val Slate800 = Color(0xFF22222B)
+val Slate700 = Color(0xFF33333F)
+val Slate600 = Color(0xFF52525E)
+val Slate500 = Color(0xFF71717E)
+val Slate400 = Color(0xFFA1A1AA)
+val Slate300 = Color(0xFFD4D4D8)
+val Slate200 = Color(0xFFE4E4E7)
+val Slate100 = Color(0xFFF4F4F5)
+val Slate50 = Color(0xFFFAF7F2)
 
 // Functional Semantic Colors
 val AmberWarning = Color(0xFFF59E0B)
 val AmberContainerLight = Color(0xFFFFFBEB)
-val RoseDanger = Color(0xFFEF4444)
-val RoseContainerLight = Color(0xFFFEF2F2)
-val BlueInfo = Color(0xFF3B82F6)
+val RoseDanger = Color(0xFFE11D48)
+val RoseContainerLight = Color(0xFFFFF1F2)
+val BlueInfo = Color(0xFF0284C7)
 
-// Modern Telecom / Banglalink Vibrant Accents & PRANTEJ Brand Hues
-val BanglalinkOrange = Color(0xFFFF5B00)
-val BanglalinkOrangeDark = Color(0xFFE04A00)
-val BanglalinkOrangeLight = Color(0xFFFF8533)
-val BanglalinkOrangeGlow = Color(0xFFFFECE0)
+// Brand Vibrant Accents
+val BanglalinkOrange = MonerRuby
+val BanglalinkOrangeDark = MonerRubyDark
+val BanglalinkOrangeLight = MonerRubyLight
+val BanglalinkOrangeGlow = Color(0xFFFFF1F2)
 
-val PrantejDeepEmerald = Color(0xFF0A382C)
-val PrantejEmeraldBright = Color(0xFF10B981)
-val PrantejGold = Color(0xFFE5B54F)
-val PrantejGoldLight = Color(0xFFF7D98B)
-val PrantejGoldDark = Color(0xFFB8861B)
-
+val MonerObsidianDark = Color(0xFF121215)

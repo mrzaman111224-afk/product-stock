@@ -21,11 +21,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -39,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +51,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.InventoryChangeType
+import com.example.data.model.UserRole
+import com.example.data.model.UserStatus
+import androidx.compose.material.icons.filled.People
 import com.example.ui.MainViewModel
 import com.example.ui.NavigationDestination
 import com.example.ui.theme.AmberWarning
@@ -55,6 +61,7 @@ import com.example.ui.theme.EmeraldDark
 import com.example.ui.theme.EmeraldSecondary
 import com.example.ui.theme.IndigoLight
 import com.example.ui.theme.IndigoPrimary
+import com.example.ui.theme.RoseDanger
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.LazyRow
@@ -68,12 +75,14 @@ import com.example.R
 import com.example.ui.components.BanglalinkPromoHeroBanner
 import com.example.ui.components.ProductAssetResolver
 import com.example.ui.components.bounceClick
+import com.example.ui.theme.MonerRuby
+import com.example.ui.theme.MonerGold
+import com.example.ui.theme.MonerGoldLight
 import com.example.ui.theme.BanglalinkOrange
 import com.example.ui.theme.BanglalinkOrangeDark
 import com.example.ui.theme.BanglalinkOrangeLight
-import com.example.ui.theme.PrantejDeepEmerald
-import com.example.ui.theme.PrantejEmeraldBright
-import com.example.ui.theme.PrantejGold
+import com.example.ui.theme.MonerObsidianDark
+
 import com.example.ui.theme.Slate200
 import com.example.ui.theme.Slate800
 import java.text.SimpleDateFormat
@@ -110,13 +119,13 @@ fun DashboardScreen(viewModel: MainViewModel) {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "PRANTEJ Store Dashboard",
+                        text = "মনের উপহার (Moner Upohar)",
                         style = MaterialTheme.typography.displaySmall,
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Clean inventory overview and daily sales counters",
+                        text = "— প্রিয়জনের জন্য, হৃদয়ের উপহার — জুয়েলারি ও গিফট টার্মিনাল",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -126,7 +135,7 @@ fun DashboardScreen(viewModel: MainViewModel) {
                     onClick = {
                         val sendIntent = android.content.Intent().apply {
                             action = android.content.Intent.ACTION_SEND
-                            putExtra(android.content.Intent.EXTRA_TEXT, "PRANTEJ CloudStock App Download & Web Link:\n$shareUrl")
+                            putExtra(android.content.Intent.EXTRA_TEXT, "মনের উপহার (Moner Upohar) App Link:\n$shareUrl")
                             type = "text/plain"
                         }
                         context.startActivity(android.content.Intent.createChooser(sendIntent, "Share App Link"))
@@ -137,6 +146,157 @@ fun DashboardScreen(viewModel: MainViewModel) {
                     Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Share Link", fontSize = 12.sp)
+                }
+            }
+        }
+
+        // Pending Staff Approval Notification for Admin (BUG 2)
+        item {
+            val currentUser by viewModel.currentUser.collectAsState()
+            val allUsers by viewModel.allUsers.collectAsState()
+            val pendingUsers = remember(allUsers) { allUsers.filter { it.status == UserStatus.PENDING } }
+
+            if (currentUser?.role == UserRole.ADMIN && pendingUsers.isNotEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .bounceClick { viewModel.navigateTo(NavigationDestination.Staff) },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = BanglalinkOrange.copy(alpha = 0.12f)),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, BanglalinkOrange)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(BanglalinkOrange),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.People,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Staff Approval Required",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = BanglalinkOrangeDark
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(BanglalinkOrange)
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "${pendingUsers.size} New",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "কর্মী রেজিস্ট্রেশন অনুমোদনের অপেক্ষায় রয়েছে। ট্যাপ করে অনুমোদন দিন।",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = { viewModel.navigateTo(NavigationDestination.Staff) },
+                            colors = ButtonDefaults.buttonColors(containerColor = BanglalinkOrange),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("Review", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Low-Stock Threshold Alert Card (Feature 1)
+        if (lowStockProducts.isNotEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .bounceClick { viewModel.navigateTo(NavigationDestination.Products) },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = RoseDanger.copy(alpha = 0.08f)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RoseDanger.copy(alpha = 0.4f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(RoseDanger.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = RoseDanger,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "Low Stock Alert (${lowStockProducts.size} Items)",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = RoseDanger
+                                )
+                                Text(
+                                    text = lowStockProducts.take(2).joinToString { "${it.name} (${it.stock} left)" },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = { viewModel.navigateTo(NavigationDestination.Products) },
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, RoseDanger)
+                        ) {
+                            Text("View", fontSize = 12.sp, color = RoseDanger, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }
@@ -201,7 +361,18 @@ fun DashboardScreen(viewModel: MainViewModel) {
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Add First Product", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("Add Custom Item", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+
+                            OutlinedButton(
+                                onClick = { viewModel.seedMonerUpoharCatalog() },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MonerGold),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MonerGold)
+                            ) {
+                                Icon(Icons.Default.FlashOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = MonerGold)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Load Jewelry Stock (৬ ক্যাটাগরি)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -234,7 +405,7 @@ fun DashboardScreen(viewModel: MainViewModel) {
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Featured Product Gallery",
+                                text = "মনের উপহার জুয়েলারি গ্যালারি",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -255,16 +426,18 @@ fun DashboardScreen(viewModel: MainViewModel) {
                     Spacer(modifier = Modifier.height(12.dp))
 
                     if (products.isEmpty()) {
-                        // Interactive Preview Showcase when store starts from 0
+                        // Interactive Preview Showcase of the 6 Categories
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             contentPadding = PaddingValues(horizontal = 4.dp)
                         ) {
                             val sampleGallery = listOf(
-                                Triple("Flagship Smartphone", "Electronics", R.drawable.prod_flagship_phone_1792690428158),
-                                Triple("Smart Watch AMOLED", "Wearables", R.drawable.prod_smart_watch_1792690441179),
-                                Triple("Wireless Earbuds ANC", "Audio", R.drawable.prod_earbuds_case_1792690455207),
-                                Triple("65W GaN Fast Charger", "Accessories", R.drawable.prod_fast_charger_1792690476604)
+                                Triple("Clover Pendant (নেকলেস)", "Necklace", R.drawable.cat_necklace),
+                                Triple("Triple-Band Bangle (ব্রেসলেট)", "Bracelet", R.drawable.cat_bracelet),
+                                Triple("Kashmiri Bridal Churi (কাশ্মীরি চুড়ি)", "Kashmiri Churi", R.drawable.cat_kashmiri_churi),
+                                Triple("Crystal Leaf Ring (আংটি)", "Finger Ring", R.drawable.cat_finger_ring),
+                                Triple("Floral Threader (কানের দুল)", "Earring", R.drawable.cat_earring),
+                                Triple("Heart Charm Payel (পায়েল)", "Payel", R.drawable.cat_payel)
                             )
                             items(sampleGallery) { item ->
                                 Card(
@@ -302,7 +475,7 @@ fun DashboardScreen(viewModel: MainViewModel) {
                                             Text(
                                                 text = "+ Add to Stock",
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = PrantejEmeraldBright,
+                                                color = MonerGold,
                                                 fontWeight = FontWeight.Bold
                                             )
                                         }
@@ -349,7 +522,7 @@ fun DashboardScreen(viewModel: MainViewModel) {
                                                     text = "${product.stock} in stock",
                                                     fontSize = 10.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = if (product.stock <= product.lowStockThreshold) AmberWarning else PrantejEmeraldBright
+                                                    color = if (product.stock <= product.lowStockThreshold) AmberWarning else MonerGold
                                                 )
                                             }
                                         }
@@ -408,6 +581,166 @@ fun DashboardScreen(viewModel: MainViewModel) {
             }
         }
 
+        // Moner Upohar 6 Jewelry Categories Showcase Card
+        item {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = CardDefaults.outlinedCardBorder()
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MonerRuby.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Favorite,
+                                    contentDescription = null,
+                                    tint = MonerRuby,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "মনের উপহার — ৬টি স্পেশাল কালেকশন",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "— প্রিয়জনের জন্য, হৃদয়ের উপহার —",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MonerGold,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MonerRuby.copy(alpha = 0.15f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "বুটিক জুয়েলারি",
+                                color = MonerRuby,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Text(
+                        text = "আমাদের মূল ৬টি প্রিমিয়াম জুয়েলারি ক্যাটাগরি:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // 6 Authentic Jewelry Categories Grid with real images and live stock counts
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            JewelryCategoryDashboardCard(
+                                title = "Necklace",
+                                bangla = "নেকলেস / গলার হার",
+                                drawableRes = R.drawable.cat_necklace,
+                                stockUnits = products.filter { it.category.contains("necklace", ignoreCase = true) || it.name.contains("necklace", ignoreCase = true) }.sumOf { it.stock },
+                                onClick = { viewModel.navigateToCategory("Necklace") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            JewelryCategoryDashboardCard(
+                                title = "Bracelet",
+                                bangla = "ব্রেসলেট",
+                                drawableRes = R.drawable.cat_bracelet,
+                                stockUnits = products.filter { it.category.contains("bracelet", ignoreCase = true) || it.name.contains("bracelet", ignoreCase = true) }.sumOf { it.stock },
+                                onClick = { viewModel.navigateToCategory("Bracelet") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            JewelryCategoryDashboardCard(
+                                title = "Kashmiri Churi",
+                                bangla = "কাশ্মীরি চুড়ি",
+                                drawableRes = R.drawable.cat_kashmiri_churi,
+                                stockUnits = products.filter { it.category.contains("churi", ignoreCase = true) || it.name.contains("churi", ignoreCase = true) || it.name.contains("চুড়ি") }.sumOf { it.stock },
+                                onClick = { viewModel.navigateToCategory("Kashmiri Churi") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            JewelryCategoryDashboardCard(
+                                title = "Finger Ring",
+                                bangla = "আংটি / রিং",
+                                drawableRes = R.drawable.cat_finger_ring,
+                                stockUnits = products.filter { it.category.contains("ring", ignoreCase = true) || it.name.contains("ring", ignoreCase = true) }.sumOf { it.stock },
+                                onClick = { viewModel.navigateToCategory("Finger Ring") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            JewelryCategoryDashboardCard(
+                                title = "Earring",
+                                bangla = "কানের দুল",
+                                drawableRes = R.drawable.cat_earring,
+                                stockUnits = products.filter { it.category.contains("earring", ignoreCase = true) || it.name.contains("earring", ignoreCase = true) || it.name.contains("দুল") }.sumOf { it.stock },
+                                onClick = { viewModel.navigateToCategory("Earring") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            JewelryCategoryDashboardCard(
+                                title = "Payel",
+                                bangla = "পায়েল / নূপুর",
+                                drawableRes = R.drawable.cat_payel,
+                                stockUnits = products.filter { it.category.contains("payel", ignoreCase = true) || it.name.contains("payel", ignoreCase = true) || it.name.contains("পায়েল") }.sumOf { it.stock },
+                                onClick = { viewModel.navigateToCategory("Payel") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 4 Boutique Highlights
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                            .padding(10.dp),
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        BenefitHighlight(icon = Icons.Default.Star, text = "প্রিমিয়াম কোয়ালিটি")
+                        BenefitHighlight(icon = Icons.Default.CheckCircle, text = "খাঁটি ফিনিশ")
+                        BenefitHighlight(icon = Icons.Default.Favorite, text = "ভালোবাসার উপহার")
+                        BenefitHighlight(icon = Icons.Default.Shield, text = "নিরাপদ প্যাকেজিং")
+                    }
+                }
+            }
+        }
+
         // 4 Key KPI Cards (Starts strictly at 0)
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -428,7 +761,7 @@ fun DashboardScreen(viewModel: MainViewModel) {
                         value = "৳ ${String.format(Locale.US, "%,.0f", metrics.totalInventoryValue)}",
                         subtitle = "${metrics.totalStockUnits} units in stock",
                         icon = Icons.Default.Inventory2,
-                        accentColor = PrantejEmeraldBright,
+                        accentColor = MonerGold,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -491,11 +824,11 @@ fun DashboardScreen(viewModel: MainViewModel) {
                             onClick = { viewModel.navigateTo(NavigationDestination.Products) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrantejDeepEmerald)
+                            colors = ButtonDefaults.buttonColors(containerColor = MonerObsidianDark)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp), tint = PrantejGold)
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp), tint = MonerGold)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Products", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PrantejGold)
+                            Text("Products", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MonerGold)
                         }
 
                         OutlinedButton(
@@ -765,6 +1098,128 @@ fun KpiCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+fun HerbBadge(
+    name: String,
+    desc: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+    ) {
+        Column {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = desc,
+                fontSize = 9.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun BenefitHighlight(
+    icon: ImageVector,
+    text: String
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(BanglalinkOrange.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = BanglalinkOrange,
+                modifier = Modifier.size(14.dp)
+            )
+        }
+        Text(
+            text = text,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+fun JewelryCategoryDashboardCard(
+    title: String,
+    bangla: String,
+    drawableRes: Int,
+    stockUnits: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        border = CardDefaults.outlinedCardBorder()
+    ) {
+        Row(
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color.Black.copy(alpha = 0.05f))
+            ) {
+                Image(
+                    painter = painterResource(id = drawableRes),
+                    contentDescription = title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+                Text(
+                    text = bangla,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+                Text(
+                    text = if (stockUnits > 0) "$stockUnits in stock" else "0 stock (Tap to add)",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (stockUnits > 0) MonerGold else RoseDanger
+                )
+            }
         }
     }
 }

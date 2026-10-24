@@ -3,6 +3,6 @@
     <item
         android:width="72dp"
         android:height="72dp"
-        android:drawable="@drawable/prantej_logo"
+        android:drawable="@drawable/moner_upohar_logo"
         android:gravity="center" />
 </layer-list>

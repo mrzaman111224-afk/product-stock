@@ -1,5 +1,7 @@
 package com.example.data.repository
 
+import android.content.Context
+import android.content.SharedPreferences
 import com.example.data.dao.StoreSettingDao
 import com.example.data.dao.UserDao
 import com.example.data.model.UserAccount
@@ -13,10 +15,51 @@ import java.util.UUID
 
 class AuthRepository(
     private val userDao: UserDao,
-    private val settingDao: StoreSettingDao
+    private val settingDao: StoreSettingDao,
+    context: Context
 ) {
+    private val prefs: SharedPreferences = context.getSharedPreferences("moner_upohar_auth_session", Context.MODE_PRIVATE)
     private val _currentUser = MutableStateFlow<UserAccount?>(null)
     val currentUser: StateFlow<UserAccount?> = _currentUser.asStateFlow()
+
+    private val _isSessionRestored = MutableStateFlow(false)
+    val isSessionRestored: StateFlow<Boolean> = _isSessionRestored.asStateFlow()
+
+    suspend fun restoreSession() {
+        try {
+            val savedUserId = prefs.getString("active_user_id", null)
+            if (savedUserId == null) {
+                _isSessionRestored.value = true
+                return
+            }
+
+            // Allow database to complete initial bootstrap if cold started
+            var user: UserAccount? = null
+            for (attempt in 1..4) {
+                user = userDao.getUserById(savedUserId)
+                if (user != null) break
+                kotlinx.coroutines.delay(100)
+            }
+
+            if (user != null && user.status == UserStatus.APPROVED) {
+                _currentUser.value = user
+            } else if (user != null && user.status != UserStatus.APPROVED) {
+                // User was pending, rejected or suspended
+                prefs.edit().remove("active_user_id").apply()
+                _currentUser.value = null
+            }
+        } catch (_: Exception) {
+            _currentUser.value = null
+        } finally {
+            _isSessionRestored.value = true
+        }
+    }
+
+    suspend fun checkStaffStatus(email: String): Result<Pair<String, UserStatus>> {
+        val user = userDao.getUserByEmail(email.trim())
+            ?: return Result.failure(Exception("এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট পাওয়া যায়নি। (Account not found)"))
+        return Result.success(Pair(user.displayName, user.status))
+    }
 
     fun observeAllUsers(): Flow<List<UserAccount>> = userDao.observeAllUsers()
 
@@ -38,6 +81,7 @@ class AuthRepository(
 
         val updated = user.copy(lastLogin = System.currentTimeMillis())
         userDao.updateUser(updated)
+        prefs.edit().putString("active_user_id", updated.id).apply()
         _currentUser.value = updated
         return Result.success(updated)
     }
@@ -45,6 +89,7 @@ class AuthRepository(
     suspend fun quickLoginAs(email: String): Result<UserAccount> {
         val user = userDao.getUserByEmail(email)
             ?: return Result.failure(Exception("Account not found"))
+        prefs.edit().putString("active_user_id", user.id).apply()
         _currentUser.value = user
         return Result.success(user)
     }
@@ -133,7 +178,7 @@ class AuthRepository(
 
     suspend fun suspendStaff(userId: String) {
         val user = userDao.getUserById(userId)
-        if (user?.email == "admin@prantej.com" || user?.id == "admin-primary-001") {
+        if (user?.email == "admin@monerupohar.com" || user?.id == "admin-primary-001") {
             return // Master admin cannot be suspended
         }
         userDao.updateUserStatus(userId, UserStatus.SUSPENDED)
@@ -144,7 +189,7 @@ class AuthRepository(
         val user = userDao.getUserById(userId)
             ?: return Result.failure(Exception("User not found"))
 
-        if (user.email == "admin@prantej.com" || user.id == "admin-primary-001") {
+        if (user.email == "admin@monerupohar.com" || user.id == "admin-primary-001") {
             return Result.failure(Exception("মূল অ্যাডমিন (Primary Store Owner) একাউন্ট স্টাফে রূপান্তর করা যাবে না।"))
         }
 
@@ -157,7 +202,7 @@ class AuthRepository(
         val user = userDao.getUserById(userId)
             ?: return Result.failure(Exception("User not found"))
 
-        if (user.email == "admin@prantej.com" || user.id == "admin-primary-001") {
+        if (user.email == "admin@monerupohar.com" || user.id == "admin-primary-001") {
             return Result.failure(Exception("মূল অ্যাডমিন (Primary Store Owner) একাউন্ট ডিলিট করা সম্ভব নয়।"))
         }
 
@@ -172,6 +217,7 @@ class AuthRepository(
     }
 
     fun logout() {
+        prefs.edit().remove("active_user_id").apply()
         _currentUser.value = null
     }
 }

@@ -332,7 +332,7 @@ fun StaffUserCard(
     onDelete: () -> Unit,
     onToggleRole: () -> Unit
 ) {
-    val isPrimaryOwner = user.email == "admin@prantej.com" || user.id == "admin-primary-001"
+    val isPrimaryOwner = user.email == "admin@monerupohar.com" || user.id == "admin-primary-001"
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val statusColor = when (user.status) {

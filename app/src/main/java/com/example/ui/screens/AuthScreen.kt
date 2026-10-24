@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
@@ -27,9 +28,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
@@ -50,7 +53,9 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -77,6 +82,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.ui.MainViewModel
+import com.example.ui.theme.MonerRuby
+import com.example.ui.theme.MonerGold
+import com.example.ui.theme.MonerGoldLight
 import com.example.ui.theme.EmeraldLight
 import com.example.ui.theme.EmeraldSecondary
 import com.example.ui.theme.IndigoLight
@@ -108,6 +116,7 @@ fun AuthScreen(viewModel: MainViewModel) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
+    var showStatusCheckDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
@@ -134,14 +143,14 @@ fun AuthScreen(viewModel: MainViewModel) {
             // App Icon & Brand Title
             Box(
                 modifier = Modifier
-                    .size(76.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .border(2.dp, IndigoLight.copy(alpha = 0.5f), RoundedCornerShape(20.dp)),
+                    .size(90.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .border(2.dp, MonerGoldLight.copy(alpha = 0.7f), RoundedCornerShape(22.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.prantej_logo),
-                    contentDescription = "PRANTEJ Official Logo",
+                    painter = painterResource(id = R.drawable.moner_upohar_logo),
+                    contentDescription = "মনের উপহার Official Logo",
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -149,15 +158,22 @@ fun AuthScreen(viewModel: MainViewModel) {
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "PRANTEJ CloudStock",
+                text = "মনের উপহার",
                 style = MaterialTheme.typography.displaySmall,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Professional Store & Inventory Management",
+                text = "— প্রিয়জনের জন্য, হৃদয়ের উপহার —",
                 style = MaterialTheme.typography.bodyMedium,
-                color = EmeraldLight,
+                color = MonerGoldLight,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "Boutique Jewelry & Gift Store POS",
+                style = MaterialTheme.typography.labelSmall,
+                color = Slate400,
                 textAlign = TextAlign.Center
             )
 
@@ -406,6 +422,22 @@ fun AuthScreen(viewModel: MainViewModel) {
                         }
                     }
 
+                    // Check approval status button
+                    Spacer(modifier = Modifier.height(10.dp))
+                    TextButton(
+                        onClick = { showStatusCheckDialog = true },
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Icon(Icons.Default.Info, contentDescription = null, tint = Slate400, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "স্টাফ আবেদন স্ট্যাটাস দেখুন (Check Approval Status)",
+                            fontSize = 12.sp,
+                            color = Slate400,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
                     // Optional 1-click admin bypass ONLY shown if explicit setting is enabled by Admin
                     if (quickAdminLoginEnabled) {
                         Spacer(modifier = Modifier.height(16.dp))
@@ -420,7 +452,7 @@ fun AuthScreen(viewModel: MainViewModel) {
                             onClick = {
                                 scope.launch {
                                     isLoading = true
-                                    viewModel.authRepo.quickLoginAs("admin@prantej.com")
+                                    viewModel.authRepo.quickLoginAs("admin@monerupohar.com")
                                     isLoading = false
                                 }
                             },
@@ -454,33 +486,51 @@ fun AuthScreen(viewModel: MainViewModel) {
                 colors = CardDefaults.cardColors(containerColor = Slate900.copy(alpha = 0.7f)),
                 border = CardDefaults.outlinedCardBorder().copy(brush = Brush.linearGradient(listOf(Slate800, Slate700)))
             ) {
-                Column(modifier = Modifier.padding(14.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Share, contentDescription = null, tint = EmeraldLight, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Download, contentDescription = null, tint = Color(0xFFFF5B00), modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "পাবলিক লিংক ও ডাউনলোড (App Download Link)",
+                                text = "GitHub Download & Public App",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                         }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFFFF5B00).copy(alpha = 0.2f))
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "APK & Web",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFF5B00)
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "অ্যাপটি ফোনে ইনস্টল বা অনলাইনে ব্যবহারের জন্য নিচের লিংকটি ব্যবহার ও শেয়ার করুন:",
+                        text = "অ্যাপটি অ্যান্ড্রয়েড মোবাইলে ব্যবহারের জন্য GitHub Releases থেকে লেটেস্ট APK ফাইল সরাসরি ডাউনলোড করতে পারেন:",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Slate400
+                        color = Slate400,
+                        lineHeight = 18.sp
                     )
 
                     Spacer(modifier = Modifier.height(10.dp))
+
+                    val githubRepoUrl = "https://github.com/mrzaman111224/Moner-Upohar"
+                    val githubReleasesUrl = "https://github.com/mrzaman111224/Moner-Upohar/releases"
 
                     Row(
                         modifier = Modifier
@@ -492,7 +542,7 @@ fun AuthScreen(viewModel: MainViewModel) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = publicShareUrl,
+                            text = githubReleasesUrl,
                             style = MaterialTheme.typography.bodySmall,
                             color = IndigoLight,
                             modifier = Modifier.weight(1f),
@@ -501,8 +551,8 @@ fun AuthScreen(viewModel: MainViewModel) {
                         Row {
                             IconButton(
                                 onClick = {
-                                    clipboardManager.setText(AnnotatedString(publicShareUrl))
-                                    Toast.makeText(context, "ডাউনলোড লিংক কপি করা হয়েছে!", Toast.LENGTH_SHORT).show()
+                                    clipboardManager.setText(AnnotatedString(githubReleasesUrl))
+                                    Toast.makeText(context, "GitHub Releases ডাউনলোড লিংক কপি করা হয়েছে!", Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier.size(36.dp)
                             ) {
@@ -512,7 +562,7 @@ fun AuthScreen(viewModel: MainViewModel) {
                                 onClick = {
                                     val sendIntent = Intent().apply {
                                         action = Intent.ACTION_SEND
-                                        putExtra(Intent.EXTRA_TEXT, "PRANTEJ CloudStock App: $publicShareUrl")
+                                        putExtra(Intent.EXTRA_TEXT, "মনের উপহার (Moner Upohar) Download Link:\n$githubReleasesUrl")
                                         type = "text/plain"
                                     }
                                     context.startActivity(Intent.createChooser(sendIntent, "Share App Link"))
@@ -523,12 +573,46 @@ fun AuthScreen(viewModel: MainViewModel) {
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(githubReleasesUrl))
+                                context.startActivity(browserIntent)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5B00)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Download APK", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(githubRepoUrl))
+                                context.startActivity(browserIntent)
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(16.dp), tint = Slate200)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("GitHub Repo", fontSize = 12.sp, color = Slate200)
+                        }
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
             Text(
-                text = "RBAC Security Protocol • PRANTEJ Technologies Ltd.",
+                text = "Boutique Store & Staff Terminal • মনের উপহার",
                 style = MaterialTheme.typography.bodySmall,
                 color = Slate600,
                 textAlign = TextAlign.Center
@@ -536,4 +620,113 @@ fun AuthScreen(viewModel: MainViewModel) {
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
+
+    if (showStatusCheckDialog) {
+        StatusCheckDialog(
+            viewModel = viewModel,
+            onDismiss = { showStatusCheckDialog = false }
+        )
+    }
+}
+
+@Composable
+fun StatusCheckDialog(
+    viewModel: MainViewModel,
+    onDismiss: () -> Unit
+) {
+    var checkEmail by remember { mutableStateOf("") }
+    var resultText by remember { mutableStateOf<String?>(null) }
+    var resultColor by remember { mutableStateOf(Color.White) }
+    var checking by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Security, contentDescription = null, tint = IndigoPrimary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Check Approval Status", fontWeight = FontWeight.Bold)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "আপনার রেজিস্টার্ড ইমেইল দিন। স্টোর অ্যাডমিন আপনার অ্যাকাউন্ট অনুমোদন করেছেন কিনা তা সাথে সাথে দেখতে পাবেন।",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                OutlinedTextField(
+                    value = checkEmail,
+                    onValueChange = { checkEmail = it },
+                    label = { Text("Staff Email Address") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                if (resultText != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(resultColor.copy(alpha = 0.12f))
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = resultText.orEmpty(),
+                            color = resultColor,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (checkEmail.isBlank()) return@Button
+                    scope.launch {
+                        checking = true
+                        val res = viewModel.authRepo.checkStaffStatus(checkEmail)
+                        res.onSuccess { (name, status) ->
+                            when (status) {
+                                com.example.data.model.UserStatus.PENDING -> {
+                                    resultText = "⏳ Waiting for admin approval (অনুমোদনের অপেক্ষায়)\n\n$name, আপনার আবেদনটি জমা রয়েছে। স্টোর অ্যাডমিন অনুমোদন করা মাত্রই আপনি লগইন করতে পারবেন।"
+                                    resultColor = Color(0xFFD97706)
+                                }
+                                com.example.data.model.UserStatus.APPROVED -> {
+                                    resultText = "✅ Approved (অনুমোদিত)\n\n$name, আপনার অ্যাকাউন্টটি অনুমোদিত! এখন আপনি পাসওয়ার্ড দিয়ে সরাসরি লগইন করতে পারবেন।"
+                                    resultColor = Color(0xFF10B981)
+                                }
+                                com.example.data.model.UserStatus.REJECTED -> {
+                                    resultText = "❌ Rejected (অনুরোধ প্রত্যাখ্যাত)\n\n$name, আপনার স্টাফ অ্যাকাউন্ট আবেদনটি অ্যাডমিন কর্তৃক বাতিল করা হয়েছে।"
+                                    resultColor = Color(0xFFEF4444)
+                                }
+                                com.example.data.model.UserStatus.SUSPENDED -> {
+                                    resultText = "⚠️ Suspended (স্থগিত)\n\n$name, আপনার অ্যাকাউন্টটি বর্তমানে স্থগিত রয়েছে।"
+                                    resultColor = Color(0xFFEF4444)
+                                }
+                            }
+                        }.onFailure {
+                            resultText = "❌ ${it.message ?: "Account not found"}"
+                            resultColor = Color(0xFFEF4444)
+                        }
+                        checking = false
+                    }
+                },
+                enabled = !checking && checkEmail.isNotBlank(),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text(if (checking) "Checking..." else "Check Status")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss, shape = RoundedCornerShape(10.dp)) {
+                Text("Close")
+            }
+        }
+    )
 }

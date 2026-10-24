@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.UserRole
 import com.example.ui.MainViewModel
+import com.example.ui.theme.BanglalinkOrange
 import com.example.ui.theme.EmeraldDark
 import com.example.ui.theme.EmeraldSecondary
 import com.example.ui.theme.IndigoLight
@@ -92,15 +93,18 @@ fun SettingsScreen(viewModel: MainViewModel) {
     val allowStaffRequests = settings.find { it.key == "allow_staff_requests" }?.value != "false"
     val enforceSingleAdmin = settings.find { it.key == "enforce_single_admin" }?.value != "false"
 
-    var storeName by remember { mutableStateOf("PRANTEJ Store") }
+    var storeName by remember { mutableStateOf("মনের উপহার (Moner Upohar)") }
     var currency by remember { mutableStateOf("BDT (৳)") }
-    var storeAddress by remember { mutableStateOf("PRANTEJ Commercial Center, Banani, Dhaka") }
+    var storeAddress by remember { mutableStateOf("মনের উপহার জুয়েলারি ও গিফট বুটিক, বাংলাদেশ") }
 
     var showPasswordModal by remember { mutableStateOf(false) }
     var oldPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf<String?>(null) }
+
+    var showRestoreDialog by remember { mutableStateOf(false) }
+    var restoreJsonText by remember { mutableStateOf("") }
 
     LazyColumn(
         modifier = Modifier
@@ -125,7 +129,161 @@ fun SettingsScreen(viewModel: MainViewModel) {
             }
         }
 
-        // 1. PUBLIC APP & DOWNLOAD LINK CARD
+        // 1. GITHUB OFFICIAL REPOSITORY & APK DOWNLOAD CARD
+        item {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                border = CardDefaults.outlinedCardBorder()
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFF24292E)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = "GitHub",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "GitHub Official Download Link",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Public Repository & Release APKs",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = EmeraldSecondary
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFFFF5B00).copy(alpha = 0.12f))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = "Public",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFF5B00)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "গিটহাব (GitHub) পাবলিক রিপোজিটরি ও রিলিজ পেইজ থেকে সরাসরি যেকোনো অ্যান্ড্রয়েড ডিভাইসে লেটেস্ট APK ডাউনলোড বা সোর্স কোড দেখতে পারবেন।",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 18.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val githubRepoUrl = "https://github.com/mrzaman111224/Moner-Upohar"
+                    val githubReleasesUrl = "https://github.com/mrzaman111224/Moner-Upohar/releases"
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = githubRepoUrl,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = IndigoPrimary,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1
+                        )
+
+                        Row {
+                            IconButton(
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString(githubReleasesUrl))
+                                    Toast.makeText(context, "GitHub Releases APK লিংক কপি করা হয়েছে!", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(Icons.Default.ContentCopy, contentDescription = "Copy GitHub Link", tint = IndigoPrimary, modifier = Modifier.size(18.dp))
+                            }
+                            IconButton(
+                                onClick = {
+                                    val sendIntent = Intent().apply {
+                                        action = Intent.ACTION_SEND
+                                        putExtra(Intent.EXTRA_TEXT, "মনের উপহার (Moner Upohar) App Link:\n$githubReleasesUrl")
+                                        type = "text/plain"
+                                    }
+                                    context.startActivity(Intent.createChooser(sendIntent, "Share App Link"))
+                                },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(Icons.Default.Share, contentDescription = "Share", tint = EmeraldSecondary, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(githubReleasesUrl))
+                                context.startActivity(browserIntent)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5B00)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Download APK", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(githubRepoUrl))
+                                context.startActivity(browserIntent)
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("GitHub Repo", fontSize = 13.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. PUBLIC CLOUD WEB APP LINK CARD
         item {
             Card(
                 shape = RoundedCornerShape(18.dp),
@@ -139,10 +297,10 @@ fun SettingsScreen(viewModel: MainViewModel) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Download, contentDescription = null, tint = EmeraldSecondary)
+                            Icon(Icons.Default.Share, contentDescription = null, tint = EmeraldSecondary)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Public App & Download Link",
+                                text = "Public Cloud Web App Link",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -151,7 +309,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
 
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "এই পাবলিক লিংকের মাধ্যমে যে কেউ সরাসরি অ্যাপে ব্রাউজার দিয়ে প্রবেশ করতে পারবে বা মোবাইলের জন্য APK ডাউনলোড করতে পারবে।",
+                        text = "এই ক্লাউড লিংকের মাধ্যমে যেকোনো ব্রাউজার দিয়ে সরাসরি সিস্টেমে প্রবেশ করা যাবে।",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -180,7 +338,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
                             IconButton(
                                 onClick = {
                                     clipboardManager.setText(AnnotatedString(publicShareUrl))
-                                    Toast.makeText(context, "ডাউনলোড লিংক কপি করা হয়েছে!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "ক্লাউড লিংক কপি করা হয়েছে!", Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier.size(36.dp)
                             ) {
@@ -190,10 +348,10 @@ fun SettingsScreen(viewModel: MainViewModel) {
                                 onClick = {
                                     val sendIntent = Intent().apply {
                                         action = Intent.ACTION_SEND
-                                        putExtra(Intent.EXTRA_TEXT, "PRANTEJ CloudStock Official App:\n$publicShareUrl")
+                                        putExtra(Intent.EXTRA_TEXT, "মনের উপহার (Moner Upohar) Web App:\n$publicShareUrl")
                                         type = "text/plain"
                                     }
-                                    context.startActivity(Intent.createChooser(sendIntent, "Share PRANTEJ App Link"))
+                                    context.startActivity(Intent.createChooser(sendIntent, "Share Web Link"))
                                 },
                                 modifier = Modifier.size(36.dp)
                             ) {
@@ -212,10 +370,10 @@ fun SettingsScreen(viewModel: MainViewModel) {
                             onClick = {
                                 val sendIntent = Intent().apply {
                                     action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_TEXT, "PRANTEJ CloudStock Mobile App Download Link:\n$publicShareUrl")
+                                    putExtra(Intent.EXTRA_TEXT, "মনের উপহার (Moner Upohar) Link:\n$publicShareUrl")
                                     type = "text/plain"
                                 }
-                                context.startActivity(Intent.createChooser(sendIntent, "Share Download Link"))
+                                context.startActivity(Intent.createChooser(sendIntent, "Share Cloud Link"))
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
                             shape = RoundedCornerShape(10.dp),
@@ -456,41 +614,59 @@ fun SettingsScreen(viewModel: MainViewModel) {
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    Button(
-                        onClick = {
-                            val nowStr = SimpleDateFormat("yyyy-MM-dd-HHmm", Locale.US).format(Date())
-                            val backupSummary = """
-                                {
-                                  "exportDate": "$nowStr",
-                                  "system": "PRANTEJ CloudStock Pro",
-                                  "metrics": {
-                                    "totalProducts": ${products.size},
-                                    "totalTransactions": ${transactions.size},
-                                    "totalAuditLogs": ${logs.size},
-                                    "totalUsers": ${users.size}
-                                  },
-                                  "products": [
-                                    ${products.joinToString(",\n") { "{\"sku\":\"${it.sku}\",\"name\":\"${it.name}\",\"stock\":${it.stock},\"price\":${it.sellingPrice}}" }}
-                                  ],
-                                  "transactions": [
-                                    ${transactions.joinToString(",\n") { "{\"invoice\":\"${it.invoiceNumber}\",\"amount\":${it.totalAmount},\"date\":${it.timestamp}}" }}
-                                  ]
-                                }
-                            """.trimIndent()
-
-                            val sendIntent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, backupSummary)
-                                type = "application/json"
-                            }
-                            context.startActivity(Intent.createChooser(sendIntent, "Export PRANTEJ CloudStock JSON Backup"))
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldDark),
-                        shape = RoundedCornerShape(12.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Generate & Share JSON Backup", fontWeight = FontWeight.Bold)
+                        Button(
+                            onClick = {
+                                val nowStr = SimpleDateFormat("yyyy-MM-dd-HHmm", Locale.US).format(Date())
+                                val backupSummary = """
+                                    {
+                                      "exportDate": "$nowStr",
+                                      "system": "Moner Upohar Boutique POS",
+                                      "metrics": {
+                                        "totalProducts": ${products.size},
+                                        "totalTransactions": ${transactions.size},
+                                        "totalAuditLogs": ${logs.size},
+                                        "totalUsers": ${users.size}
+                                      },
+                                      "products": [
+                                        ${products.joinToString(",\n") { "{\"sku\":\"${it.sku}\",\"name\":\"${it.name}\",\"stock\":${it.stock},\"price\":${it.sellingPrice},\"cost\":${it.purchaseCost},\"category\":\"${it.category}\"}" }}
+                                      ],
+                                      "transactions": [
+                                        ${transactions.joinToString(",\n") { "{\"invoice\":\"${it.invoiceNumber}\",\"amount\":${it.totalAmount},\"date\":${it.timestamp}}" }}
+                                      ]
+                                    }
+                                """.trimIndent()
+
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, backupSummary)
+                                    type = "application/json"
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, "Export Moner Upohar JSON Backup"))
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldDark),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Export Backup", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+
+                        // Restore JSON button (Admin Only - Feature 7)
+                        OutlinedButton(
+                            onClick = { showRestoreDialog = true },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f),
+                            enabled = currentUser?.role == UserRole.ADMIN
+                        ) {
+                            Icon(Icons.Default.Storage, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Import JSON", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
                     }
                 }
             }
@@ -685,6 +861,59 @@ fun SettingsScreen(viewModel: MainViewModel) {
             },
             dismissButton = {
                 TextButton(onClick = { showPasswordModal = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // JSON Restore / Import Dialog (Feature 7)
+    if (showRestoreDialog) {
+        AlertDialog(
+            onDismissRequest = { showRestoreDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Storage, contentDescription = null, tint = BanglalinkOrange)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Import & Restore Data (ব্যাকআপ রিস্টোর)", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "পূর্বে এক্সপোর্ট করা JSON ব্যাকআপ কোড এখানে পেস্ট করুন। বিদ্যমান পণ্য আপডেট হবে এবং নতুন পণ্য ইনভেন্টরিতে যোগ হবে।",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    OutlinedTextField(
+                        value = restoreJsonText,
+                        onValueChange = { restoreJsonText = it },
+                        label = { Text("Paste JSON Backup Here") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
+                        placeholder = { Text("{\"products\": [{\"sku\": \"PRN-101\", \"name\": \"...\", \"stock\": 10, \"price\": 1450}]}") }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (restoreJsonText.isNotBlank()) {
+                            viewModel.importBackupJson(restoreJsonText)
+                            showRestoreDialog = false
+                            restoreJsonText = ""
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = BanglalinkOrange),
+                    enabled = restoreJsonText.isNotBlank()
+                ) {
+                    Text("Restore Database", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRestoreDialog = false }) {
                     Text("Cancel")
                 }
             }

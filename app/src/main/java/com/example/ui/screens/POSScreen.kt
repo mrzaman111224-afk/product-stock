@@ -3,10 +3,17 @@ package com.example.ui.screens
 import android.content.Intent
 import com.example.ui.NavigationDestination
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.example.ui.components.ProductAssetResolver
+import com.example.ui.components.bounceClick
+import com.example.ui.theme.BanglalinkOrange
+import com.example.ui.theme.BanglalinkOrangeDark
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -79,6 +86,10 @@ import com.example.data.model.PaymentMethod
 import com.example.data.model.Product
 import com.example.data.model.TransactionRecord
 import com.example.ui.MainViewModel
+import com.example.ui.theme.MonerRuby
+import com.example.ui.theme.MonerGold
+import com.example.ui.theme.MonerGoldLight
+import com.example.ui.theme.BanglalinkOrange
 import com.example.ui.theme.EmeraldDark
 import com.example.ui.theme.EmeraldSecondary
 import com.example.ui.theme.IndigoLight
@@ -107,14 +118,25 @@ fun POSScreen(viewModel: MainViewModel) {
     var selectedCategory by remember { mutableStateOf("All") }
     var discountInput by remember { mutableStateOf("") }
 
+    androidx.compose.runtime.LaunchedEffect(cart) {
+        if (cart.isEmpty()) {
+            discountInput = ""
+        }
+    }
+
+    val defaultCategories = listOf("All", "Necklace", "Bracelet", "Kashmiri Churi", "Finger Ring", "Earring", "Payel")
     val categories = remember(products) {
-        listOf("All") + products.map { it.category }.distinct().sorted()
+        (defaultCategories + products.map { it.category }).distinct()
     }
 
     val availableProducts = products.filter {
         val matchesQuery = it.name.contains(searchQuery, ignoreCase = true) ||
                 it.sku.contains(searchQuery, ignoreCase = true)
-        val matchesCategory = selectedCategory == "All" || it.category == selectedCategory
+        val matchesCategory = if (selectedCategory == "All") true else {
+            val p = it.category.lowercase()
+            val s = selectedCategory.lowercase()
+            p.contains(s) || s.contains(p)
+        }
         matchesQuery && matchesCategory
     }
 
@@ -200,12 +222,20 @@ fun POSScreen(viewModel: MainViewModel) {
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                         if (products.isEmpty()) {
-                            Button(
-                                onClick = { viewModel.navigateTo(NavigationDestination.Products) },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary)
-                            ) {
-                                Text("Add Products Now", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = { viewModel.seedMonerUpoharCatalog() },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MonerRuby)
+                                ) {
+                                    Text("Load Jewelry Stock", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                                OutlinedButton(
+                                    onClick = { viewModel.navigateTo(NavigationDestination.Products) },
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("Add Custom", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
@@ -219,59 +249,102 @@ fun POSScreen(viewModel: MainViewModel) {
                 ) {
                     items(availableProducts, key = { it.id }) { product ->
                         val isOut = product.stock <= 0
+                        val imgRes = ProductAssetResolver.getDrawableForProduct(product)
+
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .bounceClick(scaleDown = 0.94f)
                                 .clickable(enabled = !isOut) { viewModel.addToCart(product) },
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = if (isOut) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                 else MaterialTheme.colorScheme.surface
                             ),
                             border = CardDefaults.outlinedCardBorder()
                         ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
-                                Text(
-                                    text = product.name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 2,
-                                    color = if (isOut) Slate400 else MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = product.sku,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                            Column {
+                                // Product Image Header
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(82.dp)
+                                        .background(Color(0xFF0F172A)),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        text = "৳ ${String.format(Locale.US, "%,.0f", product.sellingPrice)}",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isOut) Slate400 else EmeraldSecondary
+                                    Image(
+                                        painter = painterResource(id = imgRes),
+                                        contentDescription = product.name,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
                                     )
+
+                                    // Stock pill on top right
                                     Box(
                                         modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(6.dp)
                                             .clip(RoundedCornerShape(6.dp))
                                             .background(
-                                                if (isOut) RoseDanger.copy(alpha = 0.15f)
-                                                else IndigoPrimary.copy(alpha = 0.1f)
+                                                if (isOut) RoseDanger.copy(alpha = 0.9f)
+                                                else Color(0xFF0A382C).copy(alpha = 0.85f)
                                             )
                                             .padding(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
                                         Text(
-                                            text = if (isOut) "Empty" else "${product.stock}",
-                                            fontSize = 11.sp,
+                                            text = if (isOut) "Out" else "x${product.stock}",
+                                            fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isOut) RoseDanger else IndigoPrimary
+                                            color = Color.White
                                         )
+                                    }
+                                }
+
+                                Column(modifier = Modifier.padding(8.dp)) {
+                                    Text(
+                                        text = product.name,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        color = if (isOut) Slate400 else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = product.sku,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "৳ ${String.format(Locale.US, "%,.0f", product.sellingPrice)}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isOut) Slate400 else BanglalinkOrange
+                                        )
+
+                                        Box(
+                                            modifier = Modifier
+                                                .size(24.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (isOut) Slate700 else BanglalinkOrange.copy(alpha = 0.15f)
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Add,
+                                                contentDescription = "Add",
+                                                tint = if (isOut) Slate400 else BanglalinkOrange,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -487,15 +560,19 @@ fun POSScreen(viewModel: MainViewModel) {
                         onClick = { viewModel.checkoutSale() },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(46.dp),
+                            .height(48.dp)
+                            .bounceClick(),
                         enabled = cart.isNotEmpty() && !isProcessing,
-                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldDark),
-                        shape = RoundedCornerShape(12.dp)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BanglalinkOrange,
+                            disabledContainerColor = BanglalinkOrange.copy(alpha = 0.4f)
+                        ),
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         if (isProcessing) {
                             CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
                         } else {
-                            Text("Complete Sale (৳ ${String.format(Locale.US, "%,.2f", payableTotal)})", fontWeight = FontWeight.Bold)
+                            Text("Complete Sale • ৳ ${String.format(Locale.US, "%,.2f", payableTotal)}", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                         }
                     }
                 }
@@ -544,14 +621,14 @@ fun ReceiptDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "PRANTEJ CLOUDSTOCK",
+                    text = "মনের উপহার (MONER UPOHAR)",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold,
                     color = Slate900,
                     letterSpacing = 1.sp
                 )
                 Text(
-                    text = "Commercial Store Invoice",
+                    text = "— প্রিয়জনের জন্য, হৃদয়ের উপহার — জুয়েলারি মেমো",
                     style = MaterialTheme.typography.bodySmall,
                     color = Slate700
                 )
@@ -602,6 +679,14 @@ fun ReceiptDialog(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
 
+                val cleanItems = remember(tx.itemsJson) {
+                    if (tx.itemsJson.startsWith("RAW:") && tx.itemsJson.contains("###")) {
+                        tx.itemsJson.substringAfter("###")
+                    } else {
+                        tx.itemsJson
+                    }
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -609,7 +694,7 @@ fun ReceiptDialog(
                         .padding(8.dp)
                 ) {
                     Text(
-                        text = tx.itemsJson,
+                        text = cleanItems,
                         style = MaterialTheme.typography.bodySmall,
                         color = Slate800,
                         lineHeight = 18.sp
@@ -640,7 +725,7 @@ fun ReceiptDialog(
                             "৳ ${String.format(Locale.US, "%,.2f", tx.totalAmount)}",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = IndigoPrimary
+                            color = BanglalinkOrange
                         )
                     }
                 }
@@ -656,7 +741,7 @@ fun ReceiptDialog(
                     fontSize = 16.sp
                 )
                 Text(
-                    text = "Thank you for shopping with PRANTEJ Store!",
+                    text = "Thank you for choosing মনের উপহার (Moner Upohar)!",
                     style = MaterialTheme.typography.labelSmall,
                     color = Slate700
                 )
@@ -670,21 +755,22 @@ fun ReceiptDialog(
                     OutlinedButton(
                         onClick = {
                             val receiptText = """
-                                PRANTEJ CLOUDSTOCK INVOICE
-                                ---------------------------
+                                🎁 *মনের উপহার (MONER UPOHAR) INVOICE* 🎁
+                                — প্রিয়জনের জন্য, হৃদয়ের উপহার —
+                                -----------------------------
                                 Invoice: ${tx.invoiceNumber}
-                                Date: ${Date(tx.timestamp)}
+                                Date: ${SimpleDateFormat("dd-MM-yyyy hh:mm a", Locale.US).format(Date(tx.timestamp))}
                                 Cashier: ${tx.cashierName}
                                 Method: ${tx.paymentMethod.name}
                                 
-                                Items:
-                                ${tx.itemsJson}
+                                *Items:*
+                                $cleanItems
                                 
                                 Subtotal: ৳${tx.subtotal}
                                 Discount: ৳${tx.discount}
-                                Total Paid: ৳${tx.totalAmount}
-                                ---------------------------
-                                Thank you for shopping!
+                                *Total Paid: ৳${tx.totalAmount}*
+                                -----------------------------
+                                Thank you for shopping with মনের উপহার!
                             """.trimIndent()
 
                             val sendIntent = Intent().apply {
@@ -692,23 +778,23 @@ fun ReceiptDialog(
                                 putExtra(Intent.EXTRA_TEXT, receiptText)
                                 type = "text/plain"
                             }
-                            context.startActivity(Intent.createChooser(sendIntent, "Share Receipt"))
+                            context.startActivity(Intent.createChooser(sendIntent, "Share Receipt via WhatsApp"))
                         },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1.2f),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Share")
+                        Text("WhatsApp Receipt", fontSize = 12.sp)
                     }
 
                     Button(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary)
+                        colors = ButtonDefaults.buttonColors(containerColor = BanglalinkOrange)
                     ) {
-                        Text("New Sale", fontWeight = FontWeight.Bold)
+                        Text("New Sale", fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }

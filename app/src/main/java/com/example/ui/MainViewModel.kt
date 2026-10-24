@@ -17,6 +17,7 @@ import com.example.data.model.UserRole
 import com.example.data.repository.AuthRepository
 import com.example.data.repository.DashboardMetrics
 import com.example.data.repository.StockRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,10 +40,11 @@ sealed interface NavigationDestination {
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getInstance(application)
-    val authRepo = AuthRepository(database.userDao(), database.storeSettingDao())
+    val authRepo = AuthRepository(database.userDao(), database.storeSettingDao(), application)
     val stockRepo = StockRepository(database)
 
     val currentUser = authRepo.currentUser
+    val isSessionRestored = authRepo.isSessionRestored
     val allUsers = authRepo.observeAllUsers().stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
@@ -72,6 +74,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         SharingStarted.WhileSubscribed(5000),
         emptyList()
     )
+
+    init {
+        viewModelScope.launch {
+            authRepo.restoreSession()
+        }
+    }
 
     // Navigation & UI State
     private val _currentDestination = MutableStateFlow<NavigationDestination>(NavigationDestination.Dashboard)
@@ -131,6 +139,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         DashboardMetrics()
     )
 
+    private val _selectedCategoryFilter = MutableStateFlow<String>("All")
+    val selectedCategoryFilter: StateFlow<String> = _selectedCategoryFilter.asStateFlow()
+
+    fun selectCategory(cat: String) {
+        _selectedCategoryFilter.value = cat
+    }
+
+    fun navigateToCategory(cat: String) {
+        _selectedCategoryFilter.value = cat
+        _currentDestination.value = NavigationDestination.Products
+    }
+
     fun navigateTo(dest: NavigationDestination) {
         _currentDestination.value = dest
     }
@@ -141,6 +161,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearMessage() {
         _uiMessage.value = null
+    }
+
+    fun quickAdjustStock(productId: String, delta: Int, reason: String = "Manual Adjustment") {
+        val user = currentUser.value ?: return
+        viewModelScope.launch {
+            val prod = activeProducts.value.find { it.id == productId } ?: return@launch
+            val newStock = (prod.stock + delta).coerceAtLeast(0)
+            val changeType = if (delta >= 0) InventoryChangeType.RESTOCK else InventoryChangeType.DAMAGED
+            val result = stockRepo.adjustStock(
+                productId = productId,
+                newStock = newStock,
+                changeType = changeType,
+                user = user,
+                reason = reason
+            )
+            result.onSuccess {
+                showMessage("Stock updated for '${prod.name}' ($delta units -> New Stock: $newStock)")
+            }.onFailure {
+                showMessage(it.message ?: "Failed to adjust stock")
+            }
+        }
     }
 
     // Cart Operations
@@ -323,6 +364,195 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Seeds the authentic Moner Upohar boutique jewelry catalog (6 categories requested by user)
+     */
+    fun seedMonerUpoharCatalog() {
+        val user = currentUser.value ?: return
+        viewModelScope.launch {
+            val items = listOf(
+                // 1. Necklace (নেকলেস / গলার হার)
+                Product(
+                    id = UUID.randomUUID().toString(),
+                    sku = "MNR-NCK-001",
+                    name = "Clover Gold Pendant Necklace (ক্লোভার গোল্ড নেকলেস)",
+                    category = "Necklace",
+                    description = "প্রিমিয়াম ১৮ ক্যারেট গোল্ড প্লেটিং এবং ফোর-লিফ ক্লোভার পেন্ডেন্ট নেকলেস। লাক্সারি ভেলভেট কুশন লুক।",
+                    purchaseCost = 950.0,
+                    sellingPrice = 1550.0,
+                    stock = 25,
+                    lowStockThreshold = 5,
+                    status = ProductStatus.ACTIVE,
+                    createdBy = user.id,
+                    createdByName = user.displayName
+                ),
+                Product(
+                    id = UUID.randomUUID().toString(),
+                    sku = "MNR-NCK-002",
+                    name = "Royal Kundan Choker Necklace (রয়্যাল কুন্দন চোকার হার)",
+                    category = "Necklace",
+                    description = "মার্জিত ব্রাইডাল কুন্দন স্টোন ও পার্ল পেন্ডেন্ট হার। উৎসব ও বিয়ের জন্য রাজকীয় চয়েস।",
+                    purchaseCost = 1250.0,
+                    sellingPrice = 1950.0,
+                    stock = 20,
+                    lowStockThreshold = 5,
+                    status = ProductStatus.ACTIVE,
+                    createdBy = user.id,
+                    createdByName = user.displayName
+                ),
+                // 2. Bracelet (ব্রেসলেট)
+                Product(
+                    id = UUID.randomUUID().toString(),
+                    sku = "MNR-BRC-001",
+                    name = "Golden Multi-Band Bangle Bracelet (ট্রিপল ব্যান্ড গোল্ডেন ব্রেসলেট)",
+                    category = "Bracelet",
+                    description = "প্রিমিয়াম গোল্ডেন স্ফিয়ার বিডস ও ট্রিপল-ব্যান্ড ওপেনিং লাক্সারি ব্রেসলেট।",
+                    purchaseCost = 750.0,
+                    sellingPrice = 1350.0,
+                    stock = 35,
+                    lowStockThreshold = 8,
+                    status = ProductStatus.ACTIVE,
+                    createdBy = user.id,
+                    createdByName = user.displayName
+                ),
+                Product(
+                    id = UUID.randomUUID().toString(),
+                    sku = "MNR-BRC-002",
+                    name = "Adjustable Crystal Tennis Bracelet (ক্রিস্টাল টেনিস ব্রেসলেট)",
+                    category = "Bracelet",
+                    description = "ঝলমলে সুইস জিরকন খচিত এডজাস্টেবল টেনিস ব্রেসলেট। যেকোনো সাইজের হাতে চমৎকার মানায়।",
+                    purchaseCost = 550.0,
+                    sellingPrice = 950.0,
+                    stock = 40,
+                    lowStockThreshold = 6,
+                    status = ProductStatus.ACTIVE,
+                    createdBy = user.id,
+                    createdByName = user.displayName
+                ),
+                // 3. Kashmiri Churi (কাশ্মীরি চুড়ি)
+                Product(
+                    id = UUID.randomUUID().toString(),
+                    sku = "MNR-CHR-001",
+                    name = "Velvet Red Bridal Kashmiri Churi Set (ভেলভেট ব্রাইডাল কাশ্মীরি চুড়ি সেট)",
+                    category = "Kashmiri Churi",
+                    description = "রয়্যাল লাল ভেলভেট, গোল্ডেন ঘুঙুর ও ঝকঝকে স্টোন ওয়ার্ক চুড়ি সেট। স্পেশাল জুয়েলারি বক্সে সংরক্ষিত।",
+                    purchaseCost = 850.0,
+                    sellingPrice = 1450.0,
+                    stock = 30,
+                    lowStockThreshold = 6,
+                    status = ProductStatus.ACTIVE,
+                    createdBy = user.id,
+                    createdByName = user.displayName
+                ),
+                Product(
+                    id = UUID.randomUUID().toString(),
+                    sku = "MNR-CHR-002",
+                    name = "Stone Work Silk Kashmiri Churi (স্টোন ওয়ার্ক কাশ্মীরি চুড়ি)",
+                    category = "Kashmiri Churi",
+                    description = "জারকনের ঝিলিক ও রাজকীয় ঐতিহ্যবাহী কাশ্মীরি সিল্ক স্টোন ওয়ার্ক চুড়ি।",
+                    purchaseCost = 980.0,
+                    sellingPrice = 1650.0,
+                    stock = 25,
+                    lowStockThreshold = 4,
+                    status = ProductStatus.ACTIVE,
+                    createdBy = user.id,
+                    createdByName = user.displayName
+                ),
+                // 4. Finger Ring (আংটি)
+                Product(
+                    id = UUID.randomUUID().toString(),
+                    sku = "MNR-RNG-001",
+                    name = "Crystal Leaf Adjustable Gold Ring (ক্রিস্টাল লিফ গোল্ডেন আংটি)",
+                    category = "Finger Ring",
+                    description = "ঝলমলে মার্কুইস জিরকন পাতা ও গোল্ডেন ব্রাঞ্চ ডিজাইনের ফ্রি-সাইজ এডজাস্টেবল আংটি।",
+                    purchaseCost = 450.0,
+                    sellingPrice = 850.0,
+                    stock = 50,
+                    lowStockThreshold = 10,
+                    status = ProductStatus.ACTIVE,
+                    createdBy = user.id,
+                    createdByName = user.displayName
+                ),
+                Product(
+                    id = UUID.randomUUID().toString(),
+                    sku = "MNR-RNG-002",
+                    name = "Solitaire Floral Crystal Ring (সলিটেয়ার ক্রিস্টাল আংটি)",
+                    category = "Finger Ring",
+                    description = "ক্লাসিক সলিটেয়ার ডিজাইনের স্পার্কলিং ক্রিস্টাল আংটি। ভালোবাসার শ্রেষ্ঠ উপহার।",
+                    purchaseCost = 380.0,
+                    sellingPrice = 750.0,
+                    stock = 45,
+                    lowStockThreshold = 8,
+                    status = ProductStatus.ACTIVE,
+                    createdBy = user.id,
+                    createdByName = user.displayName
+                ),
+                // 5. Earring (কানের দুল)
+                Product(
+                    id = UUID.randomUUID().toString(),
+                    sku = "MNR-EAR-001",
+                    name = "Floral Sui-Suta Gold Threader Earrings (ফ্লোরাল সুই-সুতা কানের দুল)",
+                    category = "Earring",
+                    description = "সোনালী ফ্লোরাল নকশা ও ঝুলন্ত চেইন সুই-সুতা প্রিমিয়াম পার্টি দুল (PH-54-195)।",
+                    purchaseCost = 380.0,
+                    sellingPrice = 690.0,
+                    stock = 60,
+                    lowStockThreshold = 10,
+                    status = ProductStatus.ACTIVE,
+                    createdBy = user.id,
+                    createdByName = user.displayName
+                ),
+                Product(
+                    id = UUID.randomUUID().toString(),
+                    sku = "MNR-EAR-002",
+                    name = "Traditional Meenakari Jhumka (ঐতিহ্যবাহী মীনাকারি ঝুমকা)",
+                    category = "Earring",
+                    description = "হাতে তৈরি রঙিন মীনাকারি নকশা ও পার্ল ড্রপস সমৃদ্ধ জমকালো ঝুমকা।",
+                    purchaseCost = 480.0,
+                    sellingPrice = 890.0,
+                    stock = 40,
+                    lowStockThreshold = 8,
+                    status = ProductStatus.ACTIVE,
+                    createdBy = user.id,
+                    createdByName = user.displayName
+                ),
+                // 6. Payel (পায়েল)
+                Product(
+                    id = UUID.randomUUID().toString(),
+                    sku = "MNR-PYL-001",
+                    name = "Sleek Snake Chain Heart Payel (স্নেক চেইন হার্ট চার্ম পায়েল)",
+                    category = "Payel",
+                    description = "মসৃণ ১৮ ক্যারেট গোল্ড প্লেটিং স্নেক চেইন এবং কিউট ঝুলন্ত হার্ট চার্ম সম্বলিত মার্জিত পায়েল।",
+                    purchaseCost = 450.0,
+                    sellingPrice = 850.0,
+                    stock = 35,
+                    lowStockThreshold = 6,
+                    status = ProductStatus.ACTIVE,
+                    createdBy = user.id,
+                    createdByName = user.displayName
+                ),
+                Product(
+                    id = UUID.randomUUID().toString(),
+                    sku = "MNR-PYL-002",
+                    name = "Bridal Silver Ghungroo Payel (ব্রাইডাল সিলভার ঘুঙুর পায়েল)",
+                    category = "Payel",
+                    description = "মিষ্টি টুংটাং শব্দের খাঁটি সিলভার লুক ব্রাইডাল ঘুঙুর পায়েল সেট।",
+                    purchaseCost = 580.0,
+                    sellingPrice = 1050.0,
+                    stock = 30,
+                    lowStockThreshold = 5,
+                    status = ProductStatus.ACTIVE,
+                    createdBy = user.id,
+                    createdByName = user.displayName
+                )
+            )
+            for (item in items) {
+                stockRepo.addProduct(item)
+            }
+            showMessage("মনের উপহার জুয়েলারি কালেকশন সফলভাবে লোড হয়েছে! (12 Items)")
+        }
+    }
+
     // Stock Adjustment
     fun adjustStock(
         productId: String,
@@ -345,6 +575,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 onDone()
             }.onFailure {
                 showMessage("Adjustment failed: ${it.message}")
+            }
+        }
+    }
+
+    /**
+     * Reverses sale, restores inventory stock atomically, and records audit trail
+     */
+    fun cancelOrRefundSale(transactionId: String, reason: String = "Customer return / Refund") {
+        val user = currentUser.value ?: return
+        if (user.role != UserRole.ADMIN) {
+            showMessage("Only Admin can cancel transactions and restore stock.")
+            return
+        }
+        viewModelScope.launch {
+            val res = stockRepo.cancelOrRefundSale(transactionId, user, reason)
+            res.onSuccess {
+                showMessage("Sale cancelled. Items stock successfully restored to inventory.")
+            }.onFailure {
+                showMessage("Refund failed: ${it.message}")
             }
         }
     }
@@ -449,6 +698,64 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 showMessage("All store products, stock, and sales reset to 0.")
             }.onFailure {
                 showMessage("Reset failed: ${it.message}")
+            }
+        }
+    }
+
+    fun importBackupJson(jsonString: String) {
+        val user = currentUser.value ?: return
+        if (user.role != UserRole.ADMIN) {
+            showMessage("Only Administrator can import database backups.")
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val root = org.json.JSONObject(jsonString)
+                var count = 0
+                if (root.has("products")) {
+                    val array = root.getJSONArray("products")
+                    for (i in 0 until array.length()) {
+                        val obj = array.getJSONObject(i)
+                        val sku = obj.optString("sku", "SKU-$i").trim().uppercase()
+                        val name = obj.optString("name", "Product $i").trim()
+                        val stock = obj.optInt("stock", 0)
+                        val price = obj.optDouble("price", 0.0)
+                        val cost = obj.optDouble("cost", if (price > 0) price * 0.7 else 0.0)
+                        val cat = obj.optString("category", "General").trim()
+
+                        val existing = activeProducts.value.find { it.sku.equals(sku, ignoreCase = true) }
+                        if (existing != null) {
+                            stockRepo.updateProduct(existing.copy(
+                                name = name,
+                                stock = stock,
+                                sellingPrice = price,
+                                purchaseCost = cost,
+                                category = cat,
+                                status = if (stock == 0) ProductStatus.OUT_OF_STOCK else ProductStatus.ACTIVE
+                            ))
+                        } else {
+                            val newP = Product(
+                                id = UUID.randomUUID().toString(),
+                                sku = sku,
+                                name = name,
+                                category = cat,
+                                description = "Imported from backup",
+                                purchaseCost = cost,
+                                sellingPrice = price,
+                                stock = stock,
+                                lowStockThreshold = 5,
+                                status = if (stock == 0) ProductStatus.OUT_OF_STOCK else ProductStatus.ACTIVE,
+                                createdBy = user.id,
+                                createdByName = user.displayName
+                            )
+                            stockRepo.addProduct(newP)
+                        }
+                        count++
+                    }
+                }
+                showMessage("Successfully imported $count products from backup!")
+            } catch (e: Exception) {
+                showMessage("Import failed: ${e.localizedMessage ?: "Invalid JSON format"}")
             }
         }
     }

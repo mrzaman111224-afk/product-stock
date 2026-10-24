@@ -59,7 +59,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun CloudStockTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // Set false to prioritize PRANTEJ SaaS branding
+    dynamicColor: Boolean = false, // Prioritize Moner Upohar boutique jewelry branding
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

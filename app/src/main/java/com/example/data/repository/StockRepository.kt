@@ -114,17 +114,19 @@ class StockRepository(private val database: AppDatabase) {
                 val tax = (calculatedSubtotal * (taxRatePercent / 100.0))
                 val totalAmount = (calculatedSubtotal + tax - discount).coerceAtLeast(0.0)
 
-                // Simple JSON representation of items
+                // Encoded representation for automated inventory restoration + human readable description
+                val rawItemsPrefix = cart.joinToString("|") { "${it.productId},${it.quantity}" }
                 val itemsSummary = cart.joinToString(separator = "; ") {
                     "${it.productName} (x${it.quantity} @ ৳${it.unitPrice}) = ৳${it.subtotal}"
                 }
+                val encodedItemsJson = "RAW:$rawItemsPrefix###$itemsSummary"
 
                 val record = TransactionRecord(
                     id = UUID.randomUUID().toString(),
                     invoiceNumber = invoiceNumber,
                     cashierId = cashier.id,
                     cashierName = cashier.displayName,
-                    itemsJson = itemsSummary,
+                    itemsJson = encodedItemsJson,
                     itemCount = cart.sumOf { it.quantity },
                     subtotal = calculatedSubtotal,
                     tax = tax,
@@ -244,6 +246,100 @@ class StockRepository(private val database: AppDatabase) {
         val header = "SKU,Name,Category,Cost,Price,Stock,Threshold,Status\n"
         val rows = products.joinToString("\n") { p ->
             "\"${p.sku}\",\"${p.name.replace("\"", "\"\"")}\",\"${p.category}\",${p.purchaseCost},${p.sellingPrice},${p.stock},${p.lowStockThreshold},\"${p.status}\""
+        }
+        return header + rows
+    }
+
+    /**
+     * Atomically cancels or refunds a recorded sale, restoring product stock
+     * and writing an audit trail entry.
+     */
+    suspend fun cancelOrRefundSale(
+        transactionId: String,
+        performedBy: UserAccount,
+        reason: String
+    ): Result<Unit> {
+        return try {
+            database.withTransaction {
+                val tx = transactionDao.getTransactionById(transactionId)
+                    ?: throw IllegalStateException("Transaction with ID '$transactionId' not found.")
+
+                val now = System.currentTimeMillis()
+
+                if (tx.itemsJson.startsWith("RAW:")) {
+                    val rawPart = tx.itemsJson.substringAfter("RAW:").substringBefore("###")
+                    val itemEntries = rawPart.split("|")
+                    for (entry in itemEntries) {
+                        val parts = entry.split(",")
+                        if (parts.size >= 2) {
+                            val pId = parts[0]
+                            val qty = parts[1].toIntOrNull() ?: 0
+                            if (qty > 0) {
+                                val currentProd = productDao.getProductById(pId)
+                                if (currentProd != null) {
+                                    val restoredStock = currentProd.stock + qty
+                                    productDao.updateStock(currentProd.id, restoredStock, ProductStatus.ACTIVE, now)
+                                    logDao.insertLog(
+                                        InventoryLog(
+                                            id = UUID.randomUUID().toString(),
+                                            productId = currentProd.id,
+                                            productName = currentProd.name,
+                                            sku = currentProd.sku,
+                                            changeType = InventoryChangeType.RETURN,
+                                            quantityDelta = qty,
+                                            previousStock = currentProd.stock,
+                                            newStock = restoredStock,
+                                            performedBy = performedBy.id,
+                                            performedByName = performedBy.displayName,
+                                            timestamp = now,
+                                            reason = "Refund/Cancellation for Invoice #${tx.invoiceNumber}. $reason"
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Fallback for older transactions: attempt restore by product match
+                    val allActive = productDao.getAllActiveProductsList()
+                    for (prod in allActive) {
+                        if (tx.itemsJson.contains(prod.name)) {
+                            val restoredStock = prod.stock + 1
+                            productDao.updateStock(prod.id, restoredStock, ProductStatus.ACTIVE, now)
+                            logDao.insertLog(
+                                InventoryLog(
+                                    id = UUID.randomUUID().toString(),
+                                    productId = prod.id,
+                                    productName = prod.name,
+                                    sku = prod.sku,
+                                    changeType = InventoryChangeType.RETURN,
+                                    quantityDelta = 1,
+                                    previousStock = prod.stock,
+                                    newStock = restoredStock,
+                                    performedBy = performedBy.id,
+                                    performedByName = performedBy.displayName,
+                                    timestamp = now,
+                                    reason = "Refund/Cancellation for Invoice #${tx.invoiceNumber}. $reason"
+                                )
+                            )
+                        }
+                    }
+                }
+
+                transactionDao.deleteTransaction(transactionId)
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    fun exportSalesCsv(transactions: List<TransactionRecord>): String {
+        val header = "Invoice,Date,Cashier,Items Count,Subtotal,Discount,Tax,Total Amount,Payment Method,Note\n"
+        val rows = transactions.joinToString("\n") { tx ->
+            val dateStr = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date(tx.timestamp))
+            val cleanNote = tx.customerNote.replace("\"", "\"\"")
+            "\"${tx.invoiceNumber}\",\"$dateStr\",\"${tx.cashierName}\",${tx.itemCount},${tx.subtotal},${tx.discount},${tx.tax},${tx.totalAmount},\"${tx.paymentMethod}\",\"$cleanNote\""
         }
         return header + rows
     }

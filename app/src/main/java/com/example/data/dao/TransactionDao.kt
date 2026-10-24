@@ -27,6 +27,9 @@ interface TransactionDao {
     @Query("SELECT COUNT(*) FROM transactions WHERE timestamp >= :sinceTimestamp")
     suspend fun getSalesCountSince(sinceTimestamp: Long): Int
 
+    @Query("DELETE FROM transactions WHERE id = :id")
+    suspend fun deleteTransaction(id: String)
+
     @Query("DELETE FROM transactions")
     suspend fun clearAll()
 }
